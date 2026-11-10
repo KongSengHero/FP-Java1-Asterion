@@ -1,0 +1,10 @@
+{
+    "java.project.sourcePaths": [
+        "src",
+        "test"
+    ],
+    "code-runner.executorMap": {
+        "java": "cd $workspaceRoot && if not exist out mkdir out && javac -d out -sourcepath src $fullFileName && java -cp out model.$fileNameWithoutExt"
+    }
+}
+
