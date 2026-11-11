@@ -1,8 +1,8 @@
 /*
  * Team Project: Labyrinth of Asterion
  * Member: Member 1 (Combat & Hero Systems)
- * Name: Kong Seng
- * Student ID: 2025362
+ * 
+ * 
  * File: Dice.java
  *
  * Task Description:
