@@ -1,8 +1,8 @@
 /*
  * Team Project: Labyrinth of Asterion
  * Member: Member 2 (Items, Skills & Economy)
- * Name: Kong Seng
- * Student ID: 2025362
+ * 
+ * 
  * File: Treasure.java
  *
  * Task Description:
