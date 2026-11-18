@@ -1,8 +1,8 @@
 /*
  * Team Project: Labyrinth of Asterion
  * Member: Member 4 (Adversaries & Game Engine Orchestration)
- * Name: Kong Seng
- * Student ID: 2025362
+ * 
+ * 
  * File: Boss.java
  *
  * Task Description:

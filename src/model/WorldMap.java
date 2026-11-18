@@ -1,8 +1,8 @@
 /*
  * Team Project: Labyrinth of Asterion
  * Member: Member 3 (Labyrinth Environment & World Map)
- * Name: Kong Seng
- * Student ID: 2025362
+ * 
+ * 
  * File: WorldMap.java
  *
  * Task Description:
