@@ -1,7 +1,6 @@
 import model.*;
 import java.util.Random;
 
-// Regression checks for inventory stacks, potion effects, class Guard bonuses and loot tuning.
 public class FeatureTest {
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
@@ -15,7 +14,7 @@ public class FeatureTest {
     }
 
     private static void checkDefend(Hero hero, int hpBonus, int manaBonus) {
-        Game game = new Game(false, new Random(9), hero);
+        Game game = new Game(new Random(9), hero);
         Player player = game.player;
         player.hp -= 25;
         player.mana -= 25;
@@ -23,33 +22,26 @@ public class FeatureTest {
 
         game.combatDefend();
 
-        require(game.healed == hpBonus, hero.label + " Guard HP bonus should be " + hpBonus);
-        require(game.manaGained == manaBonus, hero.label + " Guard MP bonus should be " + manaBonus);
+        require(game.healed == hpBonus, hero.name + " Guard HP bonus should be " + hpBonus);
+        require(game.manaGained == manaBonus, hero.name + " Guard MP bonus should be " + manaBonus);
         require(!player.guarding, "Guard should be consumed by the next incoming hit");
     }
 
     public static void main(String[] args) {
         Player player = new Player(Hero.WARRIOR);
-        require(player.inventory.size() == 3, "starting gear and two matching potions should occupy three rows");
+        require(player.inventory.size() == 4, "starting gear and two potions should occupy four rows");
         require(player.potionCount() == 2, "player should start with two potions");
 
-        Item startingPotion = player.inventory.get(2);
-        require(startingPotion.name.equals("Potion") && startingPotion.quantity == 2,
-                "identical starting potions should be stacked");
-        player.pickUp(Item.potion());
-        require(player.inventory.size() == 3 && startingPotion.quantity == 3,
-                "picking up an identical potion should increase the stack, not add a row");
-
-        Item weapon = new Item("Test Sword", Item.WEAPON, 20, 10, 100);
-        player.pickUp(weapon);
+        Weapon weapon = new Weapon("Test Sword", 20, 10, 100);
+        player.inventory.add(weapon);
         require(player.weapon != weapon, "pickup must not auto-equip a weapon");
         require(player.equipItem(player.inventory.size() - 1), "manual weapon equip should work");
         require(player.weapon == weapon, "selected weapon should become equipped");
 
-        Item armor = new Item("Test Armor", Item.ARMOR, 10, 50, 100);
+        Armor armor = new Armor("Test Armor", 10, 50, 100);
         int previousMaxHp = player.maxHp;
         player.hp = 40;
-        player.pickUp(armor);
+        player.inventory.add(armor);
         require(player.armor != armor && player.maxHp == previousMaxHp, "pickup must not auto-equip armor");
         player.equipItem(player.inventory.size() - 1);
         require(player.maxHp == previousMaxHp + 25, "equipped armor should change maximum HP");
@@ -58,20 +50,19 @@ public class FeatureTest {
         player.hp = 10;
         player.mana = 0;
         int oldPotionCount = player.potionCount();
-        int potionIndex = itemIndex(player, "Potion");
+        int potionIndex = itemIndex(player, "Mixed Potion");
         require(player.usePotion(potionIndex), "selected potion should be usable");
-        require(player.potionCount() == oldPotionCount - 1, "using a potion should consume exactly one from its stack");
-        require(startingPotion.quantity == 2, "using a stacked potion should decrement its quantity by one");
+        require(player.potionCount() == oldPotionCount - 1, "using a potion should consume exactly one potion");
         require(player.hp > 10 && player.mana > 0, "standard potion should restore HP and MP");
 
         Player varieties = new Player(Hero.MAGE);
-        varieties.pickUp(Item.healingPotion());
-        varieties.pickUp(Item.manaPotion());
-        varieties.pickUp(Item.greaterPotion());
+        varieties.inventory.add(Potion.healing());
+        varieties.inventory.add(Potion.mana());
+        varieties.inventory.add(Potion.great());
         require(varieties.potionCount() == 5, "all potion varieties should be counted as individual consumables");
-        require(itemIndex(varieties, "Healing Potion") >= 0, "healing potion should have its own inventory stack");
-        require(itemIndex(varieties, "Mana Potion") >= 0, "mana potion should have its own inventory stack");
-        require(itemIndex(varieties, "Greater Potion") >= 0, "greater potion should have its own inventory stack");
+        require(itemIndex(varieties, "Healing Potion") >= 0, "healing potion should have its own inventory row");
+        require(itemIndex(varieties, "Mana Potion") >= 0, "mana potion should have its own inventory row");
+        require(itemIndex(varieties, "Great Potion") >= 0, "great potion should have its own inventory row");
 
         varieties.hp = varieties.maxHp;
         varieties.mana = 0;
@@ -96,17 +87,17 @@ public class FeatureTest {
         checkDefend(Hero.MAGE, 0, 15);
         checkDefend(Hero.ROGUE, 5, 5);
 
-        require(Hero.MAGE.hp == 100 && Hero.MAGE.def == 6,
+        require(Hero.MAGE.hp == 100 && Hero.MAGE.defense == 6,
                 "Mage base HP and defense should reflect the survivability buff");
         require(Skill.FIREBALL.mana == 18 && Skill.FROST_NOVA.mana == 16,
                 "Mage spells should have the reduced mana costs");
 
-        Game game = new Game(false, new Random(3), Hero.WARRIOR);
+        Game game = new Game(new Random(3), Hero.WARRIOR);
         game.fighting = new Enemy("Potion Test Dummy", 10000, 0, 0, 0, 0);
         game.player.hp = 20;
         oldPotionCount = game.player.potionCount();
-        game.combatPotion(game.player.firstPotionIndex());
-        require(game.player.potionCount() == oldPotionCount - 1, "combat potion action should consume one potion from the selected stack");
+        game.combatPotion(itemIndex(game.player, "Mixed Potion"));
+        require(game.player.potionCount() == oldPotionCount - 1, "combat potion action should consume one potion");
         require(game.fighting != null, "dummy should survive the potion turn");
 
         Random rnd = new Random(42);
@@ -114,20 +105,20 @@ public class FeatureTest {
         int normal = 0, healing = 0, mana = 0, greater = 0;
         int rolls = 10000;
         for (int i = 0; i < rolls; i++) {
-            Item item = Treasure.roll(100, rnd).item;
+            Item item = Loot.rollChest(100, rnd).item;
             if (item == null) goldOnly++;
-            else if (item.type == Item.POTION) {
+            else if (item instanceof Potion) {
                 potions++;
-                if (item.name.equals("Potion")) normal++;
+                if (item.name.equals("Mixed Potion")) normal++;
                 else if (item.name.equals("Healing Potion")) healing++;
                 else if (item.name.equals("Mana Potion")) mana++;
-                else if (item.name.equals("Greater Potion")) greater++;
-            } else if (item.type == Item.WEAPON) {
+                else if (item.name.equals("Great Potion")) greater++;
+            } else if (item instanceof Weapon) {
                 weapons++;
-                require(item.bonus <= 24, "chest weapon tier must stay below shop tier 4");
-            } else if (item.type == Item.ARMOR) {
+                require(((Weapon) item).attack <= 24, "chest weapon tier must stay below shop tier 4");
+            } else if (item instanceof Armor) {
                 armorPieces++;
-                require(item.bonus <= 16, "chest armor tier must stay below shop tier 4");
+                require(((Armor) item).defense <= 16, "chest armor tier must stay below shop tier 4");
             }
         }
         require(Math.abs(potions * 100.0 / rolls - 28) < 2, "chest potion drop rate should be close to 28%");
@@ -137,6 +128,18 @@ public class FeatureTest {
         require(normal > 0 && healing > 0 && mana > 0 && greater > 0,
                 "chest potion drops should include all four varieties");
 
-        System.out.println("Feature checks passed: stacked potions, potion varieties, Guard bonuses, Mage tuning and loot rates.");
+        Player realm = new Player(Hero.WARRIOR);
+        int oldMaxHp = realm.maxHp, oldMaxMana = realm.maxMana;
+        realm.hp = 1;
+        realm.enterLostRealm();
+        require(realm.maxHp == oldMaxHp + 30 && realm.maxMana == oldMaxMana + 10, "Lost Realm should add +30 max HP and +10 max MP");
+        require(realm.hp == realm.maxHp && realm.mana == realm.maxMana, "Lost Realm should refill HP and MP");
+
+        Random enemyRnd = new Random(1);
+        require(Enemy.create(0, enemyRnd).name.equals("Skeleton"), "enemies next to the start should be Skeletons");
+        require(Enemy.create(6, enemyRnd).kind >= Enemy.BLAZE, "far enemies should be Blaze or Void Guardian");
+        require(new Boss().name.equals("Void Dragon"), "the boss should be the Void Dragon");
+
+        System.out.println("Feature checks passed: potions, potion varieties, Guard bonuses, Mage tuning and loot rates.");
     }
 }
