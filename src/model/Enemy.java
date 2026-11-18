@@ -109,7 +109,6 @@ public class Enemy extends Fighter {
     // Self-test: run this file directly to check everything works.
     public static void main(String[] args) {
         System.out.println("=== Testing Enemy.java (Member 4) ===");
-
         // Seed 42 makes the "random" numbers the same every run, so the test is repeatable.
         Random rnd = new Random(42);
         Enemy e1 = create(1, rnd);              // enemy at distance 1
