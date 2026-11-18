@@ -1,6 +1,6 @@
-removed
-test
-out
+removed/
+test/
+out/
 
 # --- Compiled Class / Build Files ---
 *.class
